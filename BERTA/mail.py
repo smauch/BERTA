@@ -11,6 +11,8 @@ def mail(attachment):
     sender_email = config['Mail']['SenderEmail']
     receiver_email = config['Mail']['ReceiverEmail']
     password = config['Mail']['Password']
+    host = config['Mail']['Host']
+    port = int(config['Mail']['Port'])
 
     message = MIMEMultipart()
     message["From"] = sender_email
@@ -23,7 +25,7 @@ def mail(attachment):
     content = MIMEText(html, "html")
     message.attach(content)
     context = ssl.create_default_context()
-    with smtplib.SMTP_SSL("mail.gmx.net", 465, context=context) as server:
+    with smtplib.SMTP_SSL(host, port, context=context) as server:
         server.login(sender_email, password)
         server.sendmail(
             sender_email, receiver_email, message.as_string()
