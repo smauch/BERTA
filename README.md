@@ -1,2 +1,2 @@
 # BERTA
-Booking Elusive Rooms Totally Automated
+**B**ooking **E**lusive **R**ooms **T**otally **A**utomated
