@@ -1,3 +1,4 @@
+from PIL.Image import FASTOCTREE
 import requests
 from bs4 import BeautifulSoup
 import logging
@@ -37,11 +38,11 @@ def get_cookie_and_captcha(file_path='admin.php'):
         ele.dispatchEvent(new Event('load'));
         """, ele_captcha)
     # save the captcha to a file
-    file_path = 'imgs/captcha.jpg'
+    file_path = 'captcha.jpg'
     with open(file_path, 'wb') as f:
         f.write(base64.b64decode(img_captcha_base64))
     captcha_text = solve_captcha(file_path)
-    os.rename('imgs/captcha.jpg', 'imgs/' + str(captcha_text) + '.jpg')
+    os.remove('captcha.jpg')
     print(captcha_text)
     cookie = driver.get_cookie('PHPSESSID')
     cookie = {"name": cookie['name'], "value": cookie["value"], "domain":cookie["domain"]}
@@ -83,7 +84,7 @@ class Agent:
 
     def log_in(self, file_path='admin.php'):
         attempts = 0
-        while attempts < 3:
+        while attempts < 5:
             cookie, captcha_text = get_cookie_and_captcha()
             form_data = {
                 'NewUserName' : self.username,
@@ -95,10 +96,7 @@ class Agent:
             with requests.session() as s:
                 s.headers.update(
                 {
-                    "User-Agent": (
-                        "Mozilla/5.0 (X11; Linux x86_64; rv:58.0)"
-                        "Gecko/20100101 Firefox/58.0"
-                    )
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36"
                 }
                 )
                 s.cookies.set(**cookie)
@@ -108,12 +106,14 @@ class Agent:
                 if check_response(r):
                     log_str = json.dumps(('LOGIN:',self.username, 302))
                     logging.info(log_str)
+                    print('Successfully logged in')
                     return True
                 else:
                     attempts += 1
-                    time.sleep(5)
                     log_str = json.dumps(('LOGIN:',self.username, attempts, 200))
                     logging.error(log_str)
+                    time.sleep(5)
+        raise RuntimeError('The login for the agent failed for 5 times.')
 
     def get_bookings(self, file_path='report.php'):
         if not self.get_logged_in():
@@ -189,7 +189,7 @@ class Agent:
             free_places[n] = room_df.columns[room_df.loc[n].isna()].tolist()
         return free_places, room_dict
 
-    def book_entry(self, base_url, area, room_id, period, date, file_path="edit_entry.php", file_path_handler="edit_entry_handler.php"):
+    def book_entry(self, area, room_id, period, date, file_path="edit_entry.php", file_path_handler="edit_entry_handler.php"):
         if not self.get_logged_in():
             self.log_in()
         params = {
@@ -200,8 +200,8 @@ class Agent:
             "month": int(date.month),
             "day": int(date.day)
         }
-        entry_url = base_url + file_path
-        entry_handler_url = base_url + file_path_handler
+        entry_url = BASE_URL + file_path
+        entry_handler_url = BASE_URL + file_path_handler
         r = self.session.get(entry_url, params=params)
 
         soup_1 = BeautifulSoup(r.text, 'html.parser')
@@ -239,10 +239,12 @@ class Agent:
             logging.warning(log_str)
             return False
     
-    def del_entry(self,base_url, entry_id, file_path="del_entry.php"):
+    def del_entry(self, entry_id, file_path="del_entry.php"):
+        if not entry_id:
+            return True
         if not self.get_logged_in():
             self.log_in()
-        del_entry_url = base_url + file_path
+        del_entry_url = BASE_URL + file_path
         r = self.session.post(del_entry_url, {'id' : int(entry_id)})
         if check_response(r):
             log_str = json.dumps(('DELETE:', self.username, {'id' : entry_id}, 302))
