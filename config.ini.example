@@ -1,0 +1,6 @@
+[Agents]
+login_name1 = password1
+login_name2 = password2
+[General]
+AreaID = 437
+PriorAgent = login_name1
