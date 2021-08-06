@@ -10,3 +10,5 @@ PriorAgent = login_name1
 SenderEmail =sender@gmx.de
 ReceiverEmail = receiver@gmx.de
 Password = password3
+Host = mail.gmx.net
+Port = 465
