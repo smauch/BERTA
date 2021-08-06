@@ -38,7 +38,6 @@ def solve_captcha(image_path):
     filename = "{}.png".format(os.getpid())
     cv2.imwrite(filename, rotated)
 
-    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
     text = pytesseract.image_to_string(Image.open(filename),  config='-c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789')
     os.remove(filename)
     text = text.strip()
