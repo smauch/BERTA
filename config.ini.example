@@ -1,6 +1,12 @@
 [Agents]
 login_name1 = password1
 login_name2 = password2
+
 [General]
-AreaID = 437
+AreaID = 34
 PriorAgent = login_name1
+
+[Mail]
+SenderEmail =sender@gmx.de
+ReceiverEmail = receiver@gmx.de
+Password = password3
