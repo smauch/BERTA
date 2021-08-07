@@ -16,7 +16,7 @@ def get_my_bookings(agents):
         return all_bookings_df
 
 
-def new_day_book(agents, p_agent_id, area, days_delta=3, periods=[0, 1]):
+def book(agents, p_agent_id, area, days_delta, periods, fav_rooms):
     now = datetime.datetime.now().date()
     delta = datetime.timedelta(days=days_delta)
     future_date = now + delta
@@ -31,12 +31,15 @@ def new_day_book(agents, p_agent_id, area, days_delta=3, periods=[0, 1]):
     for period in periods:
         if period not in booked_periods:
             booked = None
-            rooms = free_rooms[period]
-            if not rooms:
+            p_rooms = free_rooms[period]
+            fav_p_rooms = [i for i in p_rooms if i in fav_rooms]
+            if len(fav_p_rooms):
+                p_rooms = fav_p_rooms
+            if not p_rooms:
                 logging.warning("No place left")
-                break
+                continue
             for __, agent in agents.items():
-                room_id = room_dict[rooms[int(len(rooms) / 2)]]
+                room_id = room_dict[p_rooms[int(len(p_rooms) / 2)]]
                 booked = agent.book_entry(area=area, room_id=room_id, period=period, date=future_date)
                 if booked:
                     break
@@ -44,7 +47,7 @@ def new_day_book(agents, p_agent_id, area, days_delta=3, periods=[0, 1]):
                 logging.warning("Booking failed for all agents")
 
 
-def change_booking_order(agents, p_agent_id, area, days_delta=0):
+def change_booking_order(agents, p_agent_id, area, days_delta):
     if len(agents) < 2:
         return False
     df = get_my_bookings(agents)
