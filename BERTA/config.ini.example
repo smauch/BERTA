@@ -3,8 +3,12 @@ login_name1 = password1
 login_name2 = password2
 
 [General]
-AreaID = 34
 PriorAgent = login_name1
+AreaID = 34
+FavRooms = ["A210","A213","A214","A215","A216"]
+Periods = [0,1]
+DeltaNewBooking = 3
+DeltaChangeBooking = 0
 
 [Mail]
 SenderEmail =sender@gmx.de
