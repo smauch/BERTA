@@ -7,6 +7,7 @@ import json
 import os
 import base64
 from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 import time
 from ocr import solve_captcha
 
@@ -19,7 +20,9 @@ period_dict = {
 }
 
 def get_cookie_and_captcha(file_path='admin.php'):
-    driver = webdriver.Firefox()
+    options = Options()
+    options.headless = True 
+    driver = webdriver.Firefox(options=options)
     driver.set_script_timeout(10)
     driver.get(BASE_URL + file_path)
     # find the captcha element
