@@ -70,9 +70,6 @@ def check_response(r):
     else:
         print("Unexpected return", r.status_code)
 
-    
-        
-
 
 class Agent:
     def __init__(self, username, password):
@@ -99,7 +96,7 @@ class Agent:
         if str(self.username) in soup.text:
             return True
         else:
-            False
+            return False
 
 
     def log_in(self, file_path='admin.php'):
@@ -274,10 +271,6 @@ class Agent:
             log_str = json.dumps(('DELETE:', self.username, {'id' : entry_id}, 200))
             logging.warning(log_str)
             return False
-
-
-
-
 
 
 class AgentHandler:
