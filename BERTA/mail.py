@@ -1,13 +1,13 @@
+import os.path
 import smtplib, ssl
 import codecs
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import configparser
 
-def mail(attachment):
+def mail(attachment, config_path):
     config = configparser.ConfigParser()
-    config.read('config.ini')
-
+    config.read(config_path)
     sender_email = config['Mail']['SenderEmail']
     receiver_email = config['Mail']['ReceiverEmail']
     password = config['Mail']['Password']

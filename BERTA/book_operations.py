@@ -1,10 +1,11 @@
+from agent import AgentHandler
 import datetime
 import pandas as pd
 import logging
 
 def get_my_bookings(agents):
     dfs = []
-    for __, agent in agents.items():
+    for agent in agents.get():
         df = agent.get_bookings()
         if not df.empty:
             dfs.append(df)
@@ -16,7 +17,7 @@ def get_my_bookings(agents):
         return all_bookings_df
 
 
-def book(agents, p_agent_id, area, days_delta, periods, fav_rooms):
+def book(agents: AgentHandler, p_agent_id, area, days_delta, periods, fav_rooms):
     now = datetime.datetime.now().date()
     delta = datetime.timedelta(days=days_delta)
     future_date = now + delta
@@ -26,7 +27,7 @@ def book(agents, p_agent_id, area, days_delta, periods, fav_rooms):
     else:
         df = df[df['date'] == pd.to_datetime(future_date)]
         booked_periods = df['period'].tolist()
-    free_rooms, room_dict = agents[p_agent_id].find_free_place(
+    free_rooms, room_dict = agents.get(p_agent_id).find_free_place(
         future_date, area)
     for period in periods:
         if period not in booked_periods:
@@ -38,7 +39,7 @@ def book(agents, p_agent_id, area, days_delta, periods, fav_rooms):
             if not p_rooms:
                 logging.warning("No place left")
                 continue
-            for __, agent in agents.items():
+            for agent in agents.get():
                 room_id = room_dict[p_rooms[int(len(p_rooms) / 2)]]
                 booked = agent.book_entry(area=area, room_id=room_id, period=period, date=future_date)
                 if booked:
@@ -47,7 +48,7 @@ def book(agents, p_agent_id, area, days_delta, periods, fav_rooms):
                 logging.warning("Booking failed for all agents")
 
 
-def change_booking_order(agents, p_agent_id, area, days_delta):
+def change_booking_order(agents: AgentHandler, p_agent_id, area, days_delta):
     if len(agents) < 2:
         return False
     df = get_my_bookings(agents)
@@ -57,7 +58,7 @@ def change_booking_order(agents, p_agent_id, area, days_delta):
     now = datetime.datetime.now().date()
     delta = datetime.timedelta(days_delta)
     tomorrow = now + delta
-    _, room_dict = agents[p_agent_id].find_free_place(tomorrow, area)
+    _, room_dict = agents.get(p_agent_id).find_free_place(tomorrow, area)
     tomorrow_df = df[df['date'] == pd.to_datetime(tomorrow)]
     for entry_id, row in tomorrow_df.iterrows():
 
@@ -68,16 +69,16 @@ def change_booking_order(agents, p_agent_id, area, days_delta):
 
         if _agent_id != p_agent_id:
             future_entry_df = df[df["agent"] == int(p_agent_id)]['date']
-            agents[_agent_id].del_entry(entry_id)
+            agents.get(_agent_id).del_entry(entry_id)
             if not future_entry_df.empty:
                 future_entry_id = future_entry_df.idxmax()
                 f_date = df.loc[future_entry_id]['date']
                 f_room_id = room_dict[df.loc[future_entry_id]['room']]
                 f_period = df.loc[future_entry_id]['period']
                 if f_date != _date:
-                    agents[p_agent_id].del_entry(future_entry_id)
-                    agents[_agent_id].book_entry(area=area, room_id=f_room_id, period=f_period, date=f_date)
+                    agents.get(p_agent_id).del_entry(future_entry_id)
+                    agents.get(_agent_id).book_entry(area=area, room_id=f_room_id, period=f_period, date=f_date)
                 df.drop([future_entry_id, entry_id], inplace=True)
-            agents[p_agent_id].book_entry(area=area, room_id=_room_id, period=_period, date=_date)
+            agents.get(p_agent_id).book_entry(area=area, room_id=_room_id, period=_period, date=_date)
             
             

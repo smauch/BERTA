@@ -1,3 +1,4 @@
+import re
 from PIL.Image import FASTOCTREE
 import requests
 from bs4 import BeautifulSoup
@@ -5,9 +6,12 @@ import logging
 import pandas as pd
 import json
 import os
+from typing import Union, List
 import base64
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+import urllib.parse as urlparse
+from urllib.parse import parse_qs
 import time
 from ocr import solve_captcha
 
@@ -66,10 +70,14 @@ def check_response(r):
     else:
         print("Unexpected return", r.status_code)
 
+    
+        
+
 
 class Agent:
     def __init__(self, username, password):
         self.username = username
+        self.alias = None
         self.password = password
         self.session = None
 
@@ -78,12 +86,21 @@ class Agent:
             return False
         r = self.session.get(BASE_URL)
         soup = BeautifulSoup(r.text, 'html.parser')
-        soup = soup.find_all(id='logon_box')
-        res = [x.find('a', href=True) for x in soup]
-        if any(str(self.username) in string.text for string in res):
+        soup = soup.find(id='logon_box')
+        soup = soup.find('a', href=True)
+        if soup.has_attr('href'):
+            logon_box_link = soup['href']
+            parsed = urlparse.urlparse(logon_box_link)
+            username = parse_qs(parsed.query)['creatormatch'][0]
+            if self.username != username:
+                self.alias = self.username
+                self.username = username
+
+        if str(self.username) in soup.text:
             return True
         else:
-            return False
+            False
+
 
     def log_in(self, file_path='admin.php'):
         attempts = 0
@@ -106,7 +123,7 @@ class Agent:
                 login_url = BASE_URL + file_path
                 r = s.post(login_url, form_data)
                 self.session = s
-                if check_response(r):
+                if check_response(r) and self.get_logged_in():
                     log_str = json.dumps(('LOGIN:',self.username, 302))
                     logging.info(log_str)
                     print('Successfully logged in')
@@ -257,3 +274,47 @@ class Agent:
             log_str = json.dumps(('DELETE:', self.username, {'id' : entry_id}, 200))
             logging.warning(log_str)
             return False
+
+
+
+
+
+
+class AgentHandler:
+    def __init__(self, agents = None):
+        self.agents = []
+        self._data_len = len(self.agents)
+        if agents is None:
+            pass
+        elif isinstance(agents, Agent):
+            self.agents.append(agents)
+        elif hasattr(agents, '__iter__'):
+            for agent in agents:
+                if isinstance(agent, Agent):
+                    self.agents.append(agents)
+                else:
+                    raise TypeError('Obj of type Agent was expected')
+        else:
+            raise TypeError('Obj of type Agent was expected')
+        return
+    
+    def add(self, agent: Agent):
+        if isinstance(agent, Agent):
+            self.agents.append(agent)
+        else:
+            raise TypeError('Obj of type Agent was expected')
+        self._data_len = len(self.agents)
+        return
+
+    def get(self, username=None) -> Union[Agent,List[Agent]]:
+        if username is None:
+            return self.agents
+        for agent in self.agents:
+            if username in agent.username:
+                return agent
+            elif username in agent.alias:
+                return agent
+        raise KeyError("No agent with this username was added to handler")
+
+    def __len__(self):
+        return self._data_len

@@ -1,6 +1,6 @@
 [Agents]
-login_name1 = password1
-login_name2 = password2
+@matrikel_1 = password1
+bibkonto_1 = password2
 
 [General]
 PriorAgent = login_name1
