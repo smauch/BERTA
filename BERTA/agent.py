@@ -305,7 +305,7 @@ class AgentHandler:
         for agent in self.agents:
             if username in agent.username:
                 return agent
-            elif username in agent.alias:
+            elif(agent.alias is not None and username in agent.alias):
                 return agent
         raise KeyError("No agent with this username was added to handler")
 
