@@ -156,7 +156,7 @@ class Agent:
             tbody = report_table.find('tbody')
             trs = tbody.find_all('tr')
         except:
-            return None
+            return pd.DataFrame()
         entry_ids = {}
         for tr in range(len(trs)):
             try:
