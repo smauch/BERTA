@@ -10,7 +10,7 @@ def get_my_bookings(agents):
         if not df.empty:
             dfs.append(df)
     if not dfs:
-        return None
+        return pd.DataFrame()
     else:
         all_bookings_df = pd.concat(dfs)
         all_bookings_df.sort_values(by=['date', 'period'], inplace=True)

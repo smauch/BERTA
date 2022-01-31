@@ -17,6 +17,8 @@ logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
 
 def save_report(agents):
     df = get_my_bookings(agents)
+    if df.empty:
+        return None
     df['is_prior_agent'] = False
     df.loc[df.agent == int(prior_agent_id), "is_prior_agent"] = True
     html = df.to_html()

@@ -6,6 +6,11 @@ from email.mime.text import MIMEText
 import configparser
 
 def mail(attachment, config_path):
+    if attachment == None:
+        html = "<p>No recent bookings found</p>"
+    else:
+        f=codecs.open(attachment, 'r')
+        html = f.read()
     config = configparser.ConfigParser()
     config.read(config_path)
     sender_email = config['Mail']['SenderEmail']
@@ -19,8 +24,8 @@ def mail(attachment, config_path):
     message["To"] = receiver_email
     message["Subject"] = "KIT Sitzplatzreservierung"
 
-    f=codecs.open(attachment, 'r')
-    html = f.read()
+    
+    
 
     content = MIMEText(html, "html")
     message.attach(content)
