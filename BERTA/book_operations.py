@@ -1,4 +1,3 @@
-from numpy import empty
 from agent import AgentHandler
 import datetime
 import pandas as pd
@@ -22,7 +21,7 @@ def book(agents: AgentHandler, p_agent_id, area, days_delta, reverse_fill, perio
     now = datetime.datetime.now().date()
     if reverse_fill:
         print("Bookings for the next", days_delta, "days...")
-        deltas = reversed(range(1, days_delta + 1))
+        deltas = reversed(range(0, days_delta + 1))
     else:
         print("Booking for in ", days_delta, "days...")
         deltas = list(days_delta)

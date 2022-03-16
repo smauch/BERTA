@@ -49,7 +49,7 @@ if __name__ == '__main__':
     reverse_fill = bool(config['General']["ReverseFill"])
     agents.log_in()
     #delete_all_bookings(agents)
-    change_booking_order(agents=agents, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_change)
     book(agents=agents, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_new, periods=periods, reverse_fill=reverse_fill, fav_rooms=fav_rooms)
+    change_booking_order(agents=agents, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_change)
     report_path = save_report(agents)
     mail(report_path, config_path)
