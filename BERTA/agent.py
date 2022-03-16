@@ -5,7 +5,9 @@ from bs4 import BeautifulSoup
 import logging
 import pandas as pd
 import json
+import pickle
 import os
+from pathlib import Path
 from typing import Union, List
 import base64
 from selenium import webdriver
@@ -17,11 +19,6 @@ from ocr import solve_captcha
 
 BASE_URL = 'https://raumbuchung.bibliothek.kit.edu/sitzplatzreservierung/'
 
-period_dict = {
-    'vormittags' : 0,
-    'nachmittags' : 1,
-    'abends' : 2
-}
 
 def get_cookie_and_captcha(file_path='admin.php'):
     options = Options()
@@ -86,12 +83,13 @@ class Agent:
         soup = soup.find(id='logon_box')
         soup = soup.find('a', href=True)
         if soup.has_attr('href'):
-            logon_box_link = soup['href']
-            parsed = urlparse.urlparse(logon_box_link)
-            username = parse_qs(parsed.query)['creatormatch'][0]
-            if self.username != username:
-                self.alias = self.username
-                self.username = username
+            if soup['href']:
+                logon_box_link = soup['href']
+                parsed = urlparse.urlparse(logon_box_link)
+                username = parse_qs(parsed.query)['creatormatch'][0]
+                if self.username != username:
+                    self.alias = self.username
+                    self.username = username
 
         if str(self.username) in soup.text:
             return True
@@ -100,6 +98,23 @@ class Agent:
 
 
     def log_in(self, file_path='admin.php'):
+        if self.get_logged_in():
+            return True
+        my_file = Path("tmp/" + self.username + "_cookie")
+        if my_file.is_file():
+            with requests.session() as s:
+                s.headers.update(
+                {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36"
+                }
+                )
+                with (open(my_file, "rb")) as openfile:
+                    cookie = pickle.load(openfile)
+                    s.cookies = cookie
+                    self.session = s
+                    if self.get_logged_in():
+                        print('Successfully logged in', self.username)
+                        return True
         attempts = 0
         while attempts < 5:
             cookie, captcha_text = get_cookie_and_captcha()
@@ -123,7 +138,13 @@ class Agent:
                 if check_response(r) and self.get_logged_in():
                     log_str = json.dumps(('LOGIN:',self.username, 302))
                     logging.info(log_str)
-                    print('Successfully logged in')
+                    print('Successfully logged in', self.username)
+                    if self.alias:
+                        with open("tmp/" + self.alias + "_cookie", 'wb') as f:
+                            pickle.dump(self.session.cookies, f)
+                    else:
+                        with open("tmp/" + self.username + "_cookie", 'wb') as f:
+                            pickle.dump(self.session.cookies, f)
                     return True
                 else:
                     attempts += 1
@@ -171,7 +192,6 @@ class Agent:
         report_df["date"] = pd.to_datetime(report_df["date"])
         report_df["room"] = report_df["Sitzplatz"]
         report_df["agent"] = report_df["Kurzbeschreibung"]
-        report_df['period'].replace(period_dict, inplace=True)
         report_df.set_index('entry_id', inplace=True)
         report_df = report_df.loc[:, ~report_df.columns.str.contains('Kurzbeschreibung|Sitzplatz|Bereich|Enddatum|Anfangsdatum|Unnamed')]
         return report_df
@@ -274,7 +294,8 @@ class Agent:
 
 
 class AgentHandler:
-    def __init__(self, agents = None):
+    def __init__(self, id, agents = None):
+        self.id = id
         self.agents = []
         self._data_len = len(self.agents)
         if agents is None:
@@ -308,6 +329,11 @@ class AgentHandler:
             elif(agent.alias is not None and username in agent.alias):
                 return agent
         raise KeyError("No agent with this username was added to handler")
+
+    def log_in(self):
+        for elem in self.agents:
+            elem.log_in()
+        return
 
     def __len__(self):
         return self._data_len
