@@ -9,6 +9,7 @@ FavRooms = ["A210","A213","A214","A215","A216"]
 Periods = [0,1]
 DeltaNewBooking = 3
 DeltaChangeBooking = 0
+ReverseFill = false
 
 [Mail]
 SenderEmail =sender@gmx.de
