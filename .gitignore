@@ -1,6 +1,7 @@
 # Output
 imgs/
 report.html
+tmp/
 
 # Secrets
 *.ini

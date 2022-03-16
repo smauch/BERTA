@@ -1,3 +1,4 @@
+from numpy import empty
 from agent import AgentHandler
 import datetime
 import pandas as pd
@@ -22,7 +23,7 @@ def book(agents: AgentHandler, p_agent_id, area, days_delta, periods, fav_rooms)
     delta = datetime.timedelta(days=days_delta)
     future_date = now + delta
     df = get_my_bookings(agents)
-    if df is None:
+    if df.empty:
         booked_periods = []
     else:
         df = df[df['date'] == pd.to_datetime(future_date)]
@@ -52,13 +53,14 @@ def change_booking_order(agents: AgentHandler, p_agent_id, area, days_delta):
     if len(agents) < 2:
         return False
     df = get_my_bookings(agents)
-    if df is None:
+    if df.empty:
         logging.warning("No rooms to change")
         return False
     now = datetime.datetime.now().date()
     delta = datetime.timedelta(days_delta)
     tomorrow = now + delta
     _, room_dict = agents.get(p_agent_id).find_free_place(tomorrow, area)
+    print(df)
     tomorrow_df = df[df['date'] == pd.to_datetime(tomorrow)]
     for entry_id, row in tomorrow_df.iterrows():
 

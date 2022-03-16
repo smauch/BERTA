@@ -36,7 +36,7 @@ if __name__ == '__main__':
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), config_path)
     config = configparser.ConfigParser()
     config.read(config_path)
-    agents = AgentHandler()
+    agents = AgentHandler(0)
     for username, password in config['Agents'].items():
         agents.add(Agent(username,password))
     prior_agent_id = config['General']['PriorAgent']
