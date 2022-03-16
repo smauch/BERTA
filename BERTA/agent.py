@@ -19,6 +19,12 @@ from ocr import solve_captcha
 
 BASE_URL = 'https://raumbuchung.bibliothek.kit.edu/sitzplatzreservierung/'
 
+period_dict = {
+    'vormittags' : 0,
+    'nachmittags' : 1,
+    'abends' : 2,
+    'nachts' : 3
+}
 
 def get_cookie_and_captcha(file_path='admin.php'):
     options = Options()
@@ -192,6 +198,7 @@ class Agent:
         report_df["date"] = pd.to_datetime(report_df["date"])
         report_df["room"] = report_df["Sitzplatz"]
         report_df["agent"] = report_df["Kurzbeschreibung"]
+        report_df['period'].replace(period_dict, inplace=True)
         report_df.set_index('entry_id', inplace=True)
         report_df = report_df.loc[:, ~report_df.columns.str.contains('Kurzbeschreibung|Sitzplatz|Bereich|Enddatum|Anfangsdatum|Unnamed')]
         return report_df
