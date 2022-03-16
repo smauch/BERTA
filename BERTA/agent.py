@@ -1,19 +1,13 @@
-import re
-from PIL.Image import FASTOCTREE
 import requests
 from bs4 import BeautifulSoup
 import logging
 import pandas as pd
 import json
 import pickle
-import os
 from pathlib import Path
 from typing import Union, List
-import base64
-from pathlib import Path
 import urllib.parse as urlparse
 from urllib.parse import parse_qs
-import time
 
 BASE_URL = 'https://raumbuchung.bibliothek.kit.edu/sitzplatzreservierung/'
 LOGIN_URL = 'https://raumbuchung.bibliothek.kit.edu/'
@@ -24,8 +18,6 @@ period_dict = {
     'abends' : 2,
     'nachts' : 3
 }
-
-
 
 def check_response(r):
     if r.history:
