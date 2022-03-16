@@ -10,14 +10,13 @@ import os
 from pathlib import Path
 from typing import Union, List
 import base64
-from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
+from pathlib import Path
 import urllib.parse as urlparse
 from urllib.parse import parse_qs
 import time
-from ocr import solve_captcha
 
 BASE_URL = 'https://raumbuchung.bibliothek.kit.edu/sitzplatzreservierung/'
+LOGIN_URL = 'https://raumbuchung.bibliothek.kit.edu/'
 
 period_dict = {
     'vormittags' : 0,
@@ -26,38 +25,6 @@ period_dict = {
     'nachts' : 3
 }
 
-def get_cookie_and_captcha(file_path='admin.php'):
-    options = Options()
-    options.headless = True 
-    driver = webdriver.Firefox(options=options)
-    driver.set_script_timeout(10)
-    driver.get(BASE_URL + file_path)
-    # find the captcha element
-    ele_captcha = driver.find_element_by_xpath("//img[contains(./@src, 'genCaptcha.php')]")
-
-    # get the captcha as a base64 string
-    img_captcha_base64 = driver.execute_async_script("""
-        var ele = arguments[0], callback = arguments[1];
-        ele.addEventListener('load', function fn(){
-        ele.removeEventListener('load', fn, false);
-        var cnv = document.createElement('canvas');
-        cnv.width = this.width; cnv.height = this.height;
-        cnv.getContext('2d').drawImage(this, 0, 0);
-        callback(cnv.toDataURL('image/jpeg').substring(22));
-        }, false);
-        ele.dispatchEvent(new Event('load'));
-        """, ele_captcha)
-    # save the captcha to a file
-    file_path = 'captcha.jpg'
-    with open(file_path, 'wb') as f:
-        f.write(base64.b64decode(img_captcha_base64))
-    captcha_text = solve_captcha(file_path)
-    os.remove('captcha.jpg')
-    print(captcha_text)
-    cookie = driver.get_cookie('PHPSESSID')
-    cookie = {"name": cookie['name'], "value": cookie["value"], "domain":cookie["domain"]}
-    driver.quit()
-    return cookie, captcha_text
 
 
 def check_response(r):
@@ -119,45 +86,39 @@ class Agent:
                     s.cookies = cookie
                     self.session = s
                     if self.get_logged_in():
-                        print('Successfully logged in', self.username)
+                        print('Successfully logged in with previous session - user:', self.username)
                         return True
-        attempts = 0
-        while attempts < 5:
-            cookie, captcha_text = get_cookie_and_captcha()
-            form_data = {
-                'NewUserName' : self.username,
-                'NewUserPassword' : self.password,
-                'CaptchaText' : captcha_text,
-                'Action' : 'SetName',
-                'EULA' : 'on'
+        form_data = {
+            'NewUserName' : self.username,
+            'NewUserPassword' : self.password,
+            'Action' : 'SetName',
+            'EULA' : 'on'
+        }
+        with requests.session() as s:
+            s.headers.update(
+            {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36"
             }
-            with requests.session() as s:
-                s.headers.update(
-                {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36"
-                }
-                )
-                s.cookies.set(**cookie)
-                login_url = BASE_URL + file_path
-                r = s.post(login_url, form_data)
-                self.session = s
-                if check_response(r) and self.get_logged_in():
-                    log_str = json.dumps(('LOGIN:',self.username, 302))
-                    logging.info(log_str)
-                    print('Successfully logged in', self.username)
-                    if self.alias:
-                        with open("tmp/" + self.alias + "_cookie", 'wb') as f:
-                            pickle.dump(self.session.cookies, f)
-                    else:
-                        with open("tmp/" + self.username + "_cookie", 'wb') as f:
-                            pickle.dump(self.session.cookies, f)
-                    return True
+            )
+            login_url = LOGIN_URL + file_path
+            r = s.post(login_url, form_data)
+            self.session = s
+            if check_response(r) and self.get_logged_in():
+                log_str = json.dumps(('LOGIN:',self.username, 302))
+                logging.info(log_str)
+                print('Successfully logged in with password - user:', self.username)
+                if self.alias:
+                    pickle_path = "tmp/" + self.alias + "_cookie"
+                    Path("tmp/").mkdir(parents=True, exist_ok=True)
+                    with open(pickle_path, 'wb') as f:
+                        pickle.dump(self.session.cookies, f)
                 else:
-                    attempts += 1
-                    log_str = json.dumps(('LOGIN:',self.username, attempts, 200))
-                    logging.error(log_str)
-                    time.sleep(5)
-        raise RuntimeError('The login for the agent failed for 5 times.')
+                    pickle_path = "tmp/" + self.username + "_cookie"
+                    Path("tmp/").mkdir(parents=True, exist_ok=True)
+                    with open(pickle_path, 'wb') as f:
+                        pickle.dump(self.session.cookies, f)
+                return True
+    
 
     def get_bookings(self, file_path='report.php'):
         if not self.get_logged_in():
