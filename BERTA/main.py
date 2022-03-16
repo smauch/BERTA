@@ -45,7 +45,7 @@ if __name__ == '__main__':
     fav_rooms = json.loads(config['General']["FavRooms"])
     delta_new = int(config['General']["DeltaNewBooking"])
     delta_change = int(config['General']["DeltaChangeBooking"])
-    save_report(agents)
+    agents.log_in()
     change_booking_order(agents=agents, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_change)
     book(agents=agents, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_new, periods=periods, fav_rooms=fav_rooms)
     report_path = save_report(agents)

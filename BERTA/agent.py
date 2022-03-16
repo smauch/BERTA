@@ -146,10 +146,14 @@ class Agent:
                     logging.info(log_str)
                     print('Successfully logged in', self.username)
                     if self.alias:
-                        with open("tmp/" + self.alias + "_cookie", 'wb') as f:
+                        pickle_path = "tmp/" + self.alias + "_cookie"
+                        Path("tmp/").mkdir(parents=True, exist_ok=True)
+                        with open(pickle_path, 'wb') as f:
                             pickle.dump(self.session.cookies, f)
                     else:
-                        with open("tmp/" + self.username + "_cookie", 'wb') as f:
+                        pickle_path = "tmp/" + self.username + "_cookie"
+                        Path("tmp/").mkdir(parents=True, exist_ok=True)
+                        with open(pickle_path, 'wb') as f:
                             pickle.dump(self.session.cookies, f)
                     return True
                 else:
