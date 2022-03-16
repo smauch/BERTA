@@ -50,7 +50,3 @@ if __name__ == '__main__':
     book(agents=agents, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_new, periods=periods, fav_rooms=fav_rooms)
     report_path = save_report(agents)
     mail(report_path, config_path)
-
-
-
-
