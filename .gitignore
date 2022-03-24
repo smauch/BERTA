@@ -2,10 +2,13 @@
 imgs/
 report.html
 tmp/
+data/
 
 # Secrets
 *.ini
 
+# Logs
+.log
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

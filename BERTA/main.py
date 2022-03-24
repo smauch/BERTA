@@ -47,7 +47,6 @@ if __name__ == '__main__':
     delta_new = int(config['General']["DeltaNewBooking"])
     delta_change = int(config['General']["DeltaChangeBooking"])
     reverse_fill = bool(config['General']["ReverseFill"])
-    agents.log_in()
     #delete_all_bookings(agents)
     book(agents=agents, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_new, periods=periods, reverse_fill=reverse_fill, fav_rooms=fav_rooms)
     change_booking_order(agents=agents, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_change)

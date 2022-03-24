@@ -1,3 +1,4 @@
+from tkinter.tix import Tree
 import requests
 from bs4 import BeautifulSoup
 import logging
@@ -13,10 +14,10 @@ BASE_URL = 'https://raumbuchung.bibliothek.kit.edu/sitzplatzreservierung/'
 LOGIN_URL = 'https://raumbuchung.bibliothek.kit.edu/'
 
 period_dict = {
-    'vormittags' : 0,
-    'nachmittags' : 1,
-    'abends' : 2,
-    'nachts' : 3
+    0 : 'vormittags',
+    1 : 'nachmittags',
+    2 : 'abends',
+    3 : 'nachts'
 }
 
 def check_response(r):
@@ -61,6 +62,11 @@ class Agent:
         else:
             return False
 
+    def get_alias(self):
+        if self.alias:
+            return self.alias
+        else:
+            return self.username
 
     def log_in(self, file_path='admin.php'):
         if self.get_logged_in():
@@ -110,6 +116,8 @@ class Agent:
                     with open(pickle_path, 'wb') as f:
                         pickle.dump(self.session.cookies, f)
                 return True
+            else:
+                return False
     
 
     def get_bookings(self, file_path='report.php'):
@@ -272,28 +280,42 @@ class AgentHandler:
             raise TypeError('Obj of type Agent was expected')
         return
     
-    def add(self, agent: Agent):
+    def add(self, agent: Agent) -> bool:
         if isinstance(agent, Agent):
+            if not agent.log_in():
+                return False
             self.agents.append(agent)
         else:
             raise TypeError('Obj of type Agent was expected')
         self._data_len = len(self.agents)
-        return
+        return True
 
     def get(self, username=None) -> Union[Agent,List[Agent]]:
         if username is None:
+
             return self.agents
         for agent in self.agents:
             if username in agent.username:
                 return agent
             elif(agent.alias is not None and username in agent.alias):
                 return agent
-        raise KeyError("No agent with this username was added to handler")
+        return None
 
     def log_in(self):
         for elem in self.agents:
             elem.log_in()
         return
+    
+    def remove(self, username):
+        agent = self.get(username)
+        if not agent:
+            return False
+        else:
+            self.agents.remove(agent)
+            self._data_len = len(self.agents)
+            return True
+
+
 
     def __len__(self):
         return self._data_len
