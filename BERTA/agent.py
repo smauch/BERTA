@@ -13,12 +13,9 @@ from urllib.parse import parse_qs
 BASE_URL = 'https://raumbuchung.bibliothek.kit.edu/sitzplatzreservierung/'
 LOGIN_URL = 'https://raumbuchung.bibliothek.kit.edu/'
 
-period_dict = {
-    0 : 'vormittags',
-    1 : 'nachmittags',
-    2 : 'abends',
-    3 : 'nachts'
-}
+
+
+
 
 def check_response(r):
     if r.history:
@@ -33,6 +30,14 @@ def check_response(r):
     else:
         print("Unexpected return", r.status_code)
 
+
+class BookingRulesError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+class BookingConflictsError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
 
 class Agent:
     def __init__(self, username, password):
@@ -56,7 +61,7 @@ class Agent:
                 if self.username != username:
                     self.alias = self.username
                     self.username = username
-
+        # TODO change to .string and test
         if str(self.username) in soup.text:
             return True
         else:
@@ -119,8 +124,34 @@ class Agent:
             else:
                 return False
     
+    def get_available_areas(self, file_path='admin.php'):
+        if not self.get_logged_in():
+            self.log_in()
+        target_url = BASE_URL + file_path
+        r = self.session.get(target_url)
+        soup = BeautifulSoup(r.text, 'html.parser')
+        soup = soup.find("form", {'id' : 'areaChangeForm'})
+        area_dict = {}
+        for element in soup.find_all('option'):
+            try:
+                area_dict[element['value']] = element.string
+            except:
+                pass
+        return area_dict
 
-    def get_bookings(self, file_path='report.php'):
+    def get_available_periods(self, file_path='day.php'): 
+        # TODO get this from site
+        period_dict = {
+            'vormittags' : 0,
+            'nachmittags' : 1,
+            'abends' : 2,
+            'nachts' :3
+        }
+        return period_dict
+    
+
+
+    def get_bookings(self, file_path='report.php', period_id_to_name=False):
         if not self.get_logged_in():
             self.log_in()
         target_url = BASE_URL + file_path
@@ -159,7 +190,9 @@ class Agent:
         report_df["date"] = pd.to_datetime(report_df["date"])
         report_df["room"] = report_df["Sitzplatz"]
         report_df["agent"] = report_df["Kurzbeschreibung"]
-        report_df['period'].replace(period_dict, inplace=True)
+        if not period_id_to_name:
+            period_dict = self.get_available_periods()
+            report_df['period'].replace(period_dict, inplace=True)
         report_df.set_index('entry_id', inplace=True)
         report_df = report_df.loc[:, ~report_df.columns.str.contains('Kurzbeschreibung|Sitzplatz|Bereich|Enddatum|Anfangsdatum|Unnamed')]
         return report_df
@@ -224,14 +257,17 @@ class Agent:
         check_form = form_data.copy()
         check_form['ajax'] = 1
         r = self.session.post(entry_handler_url, check_form)
+        # TODO Clean this up
         valid_booking = "true"
         if not r.json()['valid_booking']:
             if r.json()['rules_broken']:
                 valid_booking = 'rules_broken'
             elif r.json()['conflicts']:
                 valid_booking ='conflicts'
+                raise BookingConflictsError()
             else:
                 valid_booking = 'rules_broken_conflicts'
+                raise BookingRulesError()
         
         r = self.session.post(entry_handler_url, form_data)
         
@@ -292,7 +328,6 @@ class AgentHandler:
 
     def get(self, username=None) -> Union[Agent,List[Agent]]:
         if username is None:
-
             return self.agents
         for agent in self.agents:
             if username in agent.username:
