@@ -16,8 +16,8 @@ log_path = os.path.join(dirname, 'berta.log')
 logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',
                     filename=log_path, level=logging.INFO, datefmt='%d/%m/%Y %I:%M:%S %p')
 
-def save_report(agents):
-    df = get_my_bookings(agents)
+def save_report(agent_handler):
+    df = get_my_bookings(agent_handler, True)
     if df.empty:
         return None
     df['is_prior_agent'] = False
@@ -37,18 +37,18 @@ if __name__ == '__main__':
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), config_path)
     config = configparser.ConfigParser()
     config.read(config_path)
-    agents = AgentHandler(0)
+    agent_handler = AgentHandler(0)
     for username, password in config['Agents'].items():
-        agents.add(Agent(username,password))
+        agent_handler.add(Agent(username,password))
     prior_agent_id = config['General']['PriorAgent']
     area_id = config['General']["AreaID"]
     periods = json.loads(config['General']["Periods"])
     fav_rooms = json.loads(config['General']["FavRooms"])
     delta_new = int(config['General']["DeltaNewBooking"])
     delta_change = int(config['General']["DeltaChangeBooking"])
-    reverse_fill = bool(config['General']["ReverseFill"])
-    #delete_all_bookings(agents)
-    book(agents=agents, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_new, periods=periods, reverse_fill=reverse_fill, fav_rooms=fav_rooms)
-    change_booking_order(agents=agents, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_change)
-    report_path = save_report(agents)
+    reverse_fill = config.getboolean('General', "ReverseFill")
+    delete_all_bookings(agent_handler)
+    book(agent_handler=agent_handler, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_new, periods=periods, reverse_fill=reverse_fill, fav_rooms=fav_rooms)
+    change_booking_order(agent_handler=agent_handler, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_change)
+    report_path = save_report(agent_handler)
     mail(report_path, config_path)
