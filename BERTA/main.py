@@ -47,7 +47,7 @@ if __name__ == '__main__':
     delta_new = int(config['General']["DeltaNewBooking"])
     delta_change = int(config['General']["DeltaChangeBooking"])
     reverse_fill = config.getboolean('General', "ReverseFill")
-    delete_all_bookings(agent_handler)
+    #delete_all_bookings(agent_handler)
     book(agent_handler=agent_handler, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_new, periods=periods, reverse_fill=reverse_fill, fav_rooms=fav_rooms)
     change_booking_order(agent_handler=agent_handler, p_agent_id=prior_agent_id, area=area_id, days_delta=delta_change)
     report_path = save_report(agent_handler)
